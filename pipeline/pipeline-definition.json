@@ -1,0 +1,101 @@
+{
+  "pipeline": {
+    "name": "ashimizu-wordpress-pipeline",
+    "roleArn": "arn:aws:iam::533876055951:role/CodePipelineServiceRole",
+    "artifactStore": {
+      "type": "S3",
+      "location": "ashimizu-wordpress-pipeline-artifacts"
+    },
+    "stages": [
+      {
+        "name": "Source",
+        "actions": [
+          {
+            "name": "GitHub_Source",
+            "actionTypeId": {
+              "category": "Source",
+              "owner": "AWS",
+              "provider": "CodeStarSourceConnection",
+              "version": "1"
+            },
+            "configuration": {
+              "ConnectionArn": "arn:aws:codestar-connections:ap-northeast-3:533876055951:connection/xxxxxxxx",
+              "FullRepositoryId": "YOUR_GITHUB_USER/YOUR_REPO",
+              "BranchName": "main",
+              "OutputArtifactFormat": "CODE_ZIP",
+              "DetectChanges": "true"
+            },
+            "outputArtifacts": [{ "name": "SourceArtifact" }],
+            "runOrder": 1
+          }
+        ]
+      },
+      {
+        "name": "Build",
+        "actions": [
+          {
+            "name": "Docker_Build_Push",
+            "actionTypeId": {
+              "category": "Build",
+              "owner": "AWS",
+              "provider": "CodeBuild",
+              "version": "1"
+            },
+            "configuration": {
+              "ProjectName": "ashimizu-wordpress-build"
+            },
+            "inputArtifacts": [{ "name": "SourceArtifact" }],
+            "outputArtifacts": [{ "name": "BuildArtifact" }],
+            "runOrder": 1
+          }
+        ]
+      },
+      {
+        "name": "Approve",
+        "actions": [
+          {
+            "name": "Manual_Approval",
+            "actionTypeId": {
+              "category": "Approval",
+              "owner": "AWS",
+              "provider": "Manual",
+              "version": "1"
+            },
+            "configuration": {
+              "NotificationArn": "arn:aws:sns:ap-northeast-3:533876055951:ashimizu-wordpress-deploy-approval",
+              "CustomData": "ECR へのプッシュが完了しました。本番デプロイを承認してください。",
+              "ExternalEntityLink": "https://ap-northeast-3.console.aws.amazon.com/codesuite/codepipeline/pipelines/ashimizu-wordpress-pipeline/view"
+            },
+            "runOrder": 1
+          }
+        ]
+      },
+      {
+        "name": "Deploy",
+        "actions": [
+          {
+            "name": "BlueGreen_Deploy",
+            "actionTypeId": {
+              "category": "Deploy",
+              "owner": "AWS",
+              "provider": "CodeDeployToECS",
+              "version": "1"
+            },
+            "configuration": {
+              "ApplicationName": "ashimizu-wordpress-app",
+              "DeploymentGroupName": "ashimizu-wordpress-dg",
+              "TaskDefinitionTemplateArtifact": "BuildArtifact",
+              "TaskDefinitionTemplatePath": "taskdef.json",
+              "AppSpecTemplateArtifact": "BuildArtifact",
+              "AppSpecTemplatePath": "appspec.yml",
+              "Image1ArtifactName": "BuildArtifact",
+              "Image1ContainerName": "IMAGE_NAME"
+            },
+            "inputArtifacts": [{ "name": "BuildArtifact" }],
+            "runOrder": 1
+          }
+        ]
+      }
+    ]
+  }
+}

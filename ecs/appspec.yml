@@ -1,0 +1,40 @@
+version: 0.0
+
+# =============================================================================
+# CodeDeploy appspec.yml
+# 役割: Blue/Green デプロイ時の ECS サービス設定とライフサイクルフックを定義する
+#
+# 【変更が必要な箇所】
+#   - Subnets    : ECS タスクを起動するサブネット ID
+#   - SecurityGroups: ECS タスク用セキュリティグループ ID
+#   - Lambda ARN : ライフサイクルフック用 Lambda の ARN
+# =============================================================================
+
+Resources:
+  - TargetService:
+      Type: AWS::ECS::Service
+      Properties:
+        # <TASK_DEFINITION> は CodeDeploy が taskdef.json の内容で自動置換する
+        TaskDefinition: <TASK_DEFINITION>
+        LoadBalancerInfo:
+          # ALB が直接トラフィックを流すコンテナを指定する（nginx = ポート80受付）
+          ContainerName: "nginx"
+          ContainerPort: 80
+        PlatformVersion: "LATEST"
+        NetworkConfiguration:
+          AwsvpcConfiguration:
+            Subnets:
+              - subnet-xxxxxxxx   # ← 使用するサブネット ID に変更
+              - subnet-yyyyyyyy   # ← 使用するサブネット ID に変更
+            SecurityGroups:
+              - sg-xxxxxxxx       # ← ECS タスク用セキュリティグループ ID に変更
+            AssignPublicIp: ENABLED
+
+# =============================================================================
+# ライフサイクルフック（Lambda が Succeeded を返すとデプロイ続行）
+# BeforeAllowTraffic: :443 切り替え前に Green タスクの動作確認を実施
+# AfterAllowTraffic:  :443 切り替え後にスモークテストと Slack 通知を実施
+# =============================================================================
+Hooks:
+  - BeforeAllowTraffic: "arn:aws:lambda:ap-northeast-3:533876055951:function:wordpress-before-allow-traffic"
+  - AfterAllowTraffic: "arn:aws:lambda:ap-northeast-3:533876055951:function:wordpress-after-allow-traffic"

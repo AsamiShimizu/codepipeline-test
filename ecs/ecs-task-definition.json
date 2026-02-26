@@ -1,0 +1,173 @@
+{
+  "family": "ashimizu-testwp-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::533876055951:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::533876055951:role/ecsTaskRole",
+  "ephemeralStorage": {
+    "sizeInGiB": 30
+  },
+  "containerDefinitions": [
+    {
+      "name": "nginx",
+      "image": "533876055951.dkr.ecr.ap-northeast-3.amazonaws.com/ashimizu-testwp-nginx:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 80,
+          "protocol": "tcp"
+        }
+      ],
+      "dependsOn": [
+        {
+          "containerName": "php-fpm",
+          "condition": "HEALTHY"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "wordpress-data",
+          "containerPath": "/var/www/html",
+          "readOnly": true
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/ashimizu-testwp",
+          "awslogs-region": "ap-northeast-3",
+          "awslogs-stream-prefix": "nginx"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost/nginx-health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    },
+    {
+      "name": "php-fpm",
+      "image": "533876055951.dkr.ecr.ap-northeast-3.amazonaws.com/ashimizu-testwp-phpfpm:latest",
+      "essential": true,
+      "portMappings": [],
+      "dependsOn": [
+        {
+          "containerName": "mysql",
+          "condition": "HEALTHY"
+        }
+      ],
+      "environment": [
+        {
+          "name": "WORDPRESS_DB_HOST",
+          "value": "127.0.0.1"
+        },
+        {
+          "name": "WORDPRESS_DB_NAME",
+          "value": "wordpress"
+        },
+        {
+          "name": "WORDPRESS_DB_USER",
+          "value": "wordpress"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "WORDPRESS_DB_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-3:533876055951:secret:wordpress/db-password"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "wordpress-data",
+          "containerPath": "/var/www/html",
+          "readOnly": false
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/ashimizu-testwp",
+          "awslogs-region": "ap-northeast-3",
+          "awslogs-stream-prefix": "php-fpm"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "php-fpm-healthcheck || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 90
+      }
+    },
+    {
+      "name": "mysql",
+      "image": "533876055951.dkr.ecr.ap-northeast-3.amazonaws.com/ashimizu-testwp-mysql:latest",
+      "essential": true,
+      "portMappings": [],
+      "environment": [
+        {
+          "name": "MYSQL_DATABASE",
+          "value": "wordpress"
+        },
+        {
+          "name": "MYSQL_USER",
+          "value": "wordpress"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "MYSQL_ROOT_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-3:533876055951:secret:wordpress/db-root-password"
+        },
+        {
+          "name": "MYSQL_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-3:533876055951:secret:wordpress/db-password"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "mysql-data",
+          "containerPath": "/var/lib/mysql",
+          "readOnly": false
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/ashimizu-testwp",
+          "awslogs-region": "ap-northeast-3",
+          "awslogs-stream-prefix": "mysql"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "mariadb-admin ping -h localhost -u root --password=$MYSQL_ROOT_PASSWORD || exit 1"],
+        "interval": 10,
+        "timeout": 5,
+        "retries": 5,
+        "startPeriod": 60
+      }
+    }
+  ],
+  "volumes": [
+    {
+      "name": "wordpress-data"
+    },
+    {
+      "name": "mysql-data"
+    }
+  ],
+  "tags": [
+    {
+      "key": "Project",
+      "value": "WordPress"
+    },
+    {
+      "key": "Environment",
+      "value": "Development"
+    }
+  ]
+}
