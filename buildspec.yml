@@ -8,6 +8,8 @@ env:
 phases:
   pre_build:
     commands:
+      - echo "=== ECR Public ログイン ==="
+      - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
       - echo "=== ECR ログイン ==="
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_BASE
       - echo "=== イメージタグ生成 (commit hash 7桁) ==="
