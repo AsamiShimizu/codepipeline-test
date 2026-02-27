@@ -1,22 +1,15 @@
 version: 0.2
 
-# =============================================================================
-# CodeBuild buildspec.yml
-# 役割: 3コンテナをビルド・ECRプッシュし、CodeDeploy用アーティファクトを生成する
-# =============================================================================
-
 env:
   variables:
-    AWS_DEFAULT_REGION: ap-northeast-3
-    ECR_BASE: 533876055951.dkr.ecr.ap-northeast-3.amazonaws.com
+    AWS_DEFAULT_REGION: ap-northeast-1
+    ECR_BASE: 533876055951.dkr.ecr.ap-northeast-1.amazonaws.com
 
 phases:
   pre_build:
     commands:
       - echo "=== ECR ログイン ==="
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION |
-          docker login --username AWS --password-stdin $ECR_BASE
-
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_BASE
       - echo "=== イメージタグ生成 (commit hash 7桁) ==="
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=${COMMIT_HASH:=latest}
@@ -25,18 +18,12 @@ phases:
   build:
     commands:
       - echo "=== Docker イメージビルド ==="
-
-      # nginx
       - docker build -t ashimizu-testwp-nginx:$IMAGE_TAG ./ecs/nginx
       - docker tag ashimizu-testwp-nginx:$IMAGE_TAG $ECR_BASE/ashimizu-testwp-nginx:$IMAGE_TAG
       - docker tag ashimizu-testwp-nginx:$IMAGE_TAG $ECR_BASE/ashimizu-testwp-nginx:latest
-
-      # php-fpm
       - docker build -t ashimizu-testwp-phpfpm:$IMAGE_TAG ./ecs/php-fpm
       - docker tag ashimizu-testwp-phpfpm:$IMAGE_TAG $ECR_BASE/ashimizu-testwp-phpfpm:$IMAGE_TAG
       - docker tag ashimizu-testwp-phpfpm:$IMAGE_TAG $ECR_BASE/ashimizu-testwp-phpfpm:latest
-
-      # mysql
       - docker build -t ashimizu-testwp-mysql:$IMAGE_TAG ./ecs/mysql
       - docker tag ashimizu-testwp-mysql:$IMAGE_TAG $ECR_BASE/ashimizu-testwp-mysql:$IMAGE_TAG
       - docker tag ashimizu-testwp-mysql:$IMAGE_TAG $ECR_BASE/ashimizu-testwp-mysql:latest
@@ -44,30 +31,15 @@ phases:
   post_build:
     commands:
       - echo "=== ECR へプッシュ ==="
-
       - docker push $ECR_BASE/ashimizu-testwp-nginx:$IMAGE_TAG
       - docker push $ECR_BASE/ashimizu-testwp-nginx:latest
       - docker push $ECR_BASE/ashimizu-testwp-phpfpm:$IMAGE_TAG
       - docker push $ECR_BASE/ashimizu-testwp-phpfpm:latest
       - docker push $ECR_BASE/ashimizu-testwp-mysql:$IMAGE_TAG
       - docker push $ECR_BASE/ashimizu-testwp-mysql:latest
-
       - echo "=== CodeDeploy 用アーティファクト生成 ==="
-
-      # imageDetail.json: Blue/Green デプロイ用（ALB に向けるコンテナのURIを指定）
-      - |
-        printf '{"ImageURI":"%s"}' \
-          "$ECR_BASE/ashimizu-testwp-nginx:$IMAGE_TAG" > imageDetail.json
-
-      # taskdef.json: タスク定義テンプレート（イメージタグを commit hash に置換）
-      - |
-        sed \
-          -e "s|ashimizu-testwp-nginx:latest|ashimizu-testwp-nginx:$IMAGE_TAG|g" \
-          -e "s|ashimizu-testwp-phpfpm:latest|ashimizu-testwp-phpfpm:$IMAGE_TAG|g" \
-          -e "s|ashimizu-testwp-mysql:latest|ashimizu-testwp-mysql:$IMAGE_TAG|g" \
-          ecs/ecs-task-definition.json > taskdef.json
-
-      # 生成ファイルの確認（CloudWatch Logs で確認できる）
+      - printf '{"ImageURI":"%s"}' "$ECR_BASE/ashimizu-testwp-nginx:$IMAGE_TAG" > imageDetail.json
+      - sed -e "s|ashimizu-testwp-nginx:latest|ashimizu-testwp-nginx:$IMAGE_TAG|g" -e "s|ashimizu-testwp-phpfpm:latest|ashimizu-testwp-phpfpm:$IMAGE_TAG|g" -e "s|ashimizu-testwp-mysql:latest|ashimizu-testwp-mysql:$IMAGE_TAG|g" ecs/ecs-task-definition.json > taskdef.json
       - echo "--- imageDetail.json ---"
       - cat imageDetail.json
       - echo "--- taskdef.json (image部分のみ) ---"
