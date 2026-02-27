@@ -1,7 +1,7 @@
 {
   "pipeline": {
     "name": "ashimizu-wordpress-pipeline",
-    "roleArn": "arn:aws:iam::533876055951:role/CodePipelineServiceRole",
+    "roleArn": "arn:aws:iam::533876055951:role/ashimizu-CodePipelineServiceRole",
     "artifactStore": {
       "type": "S3",
       "location": "ashimizu-wordpress-pipeline-artifacts"
@@ -20,7 +20,7 @@
             },
             "configuration": {
               "ConnectionArn": "arn:aws:codestar-connections:ap-northeast-3:533876055951:connection/xxxxxxxx",
-              "FullRepositoryId": "YOUR_GITHUB_USER/YOUR_REPO",
+              "FullRepositoryId": "AsamiShimizu/codepipeline-test",
               "BranchName": "main",
               "OutputArtifactFormat": "CODE_ZIP",
               "DetectChanges": "true"
