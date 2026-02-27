@@ -1,12 +1,9 @@
 # =============================================================================
 # Stage 1: 設定ファイルのバリデーション
 # =============================================================================
-FROM alpine:3.19 AS config-validator
-
+FROM public.ecr.aws/docker/library/alpine:3.19 AS config-validator
 RUN apk add --no-cache mariadb mariadb-client
-
 RUN mkdir -p /etc/mysql/conf.d
-
 RUN { \
         echo '[mysqld]'; \
         echo 'character-set-server=utf8mb4'; \
@@ -38,23 +35,17 @@ RUN { \
         echo '[mysql]'; \
         echo 'default-character-set=utf8mb4'; \
     } > /etc/mysql/conf.d/wordpress.cnf
-
 # =============================================================================
 # Stage 2: 本番イメージ
 # =============================================================================
-FROM mariadb:11.2-jammy
-
+FROM public.ecr.aws/docker/library/mariadb:11.2-jammy
 LABEL maintainer="WordPress Docker Environment"
 LABEL description="Minimal MariaDB for WordPress"
-
 COPY --from=config-validator /etc/mysql/conf.d/wordpress.cnf /etc/mysql/conf.d/wordpress.cnf
-
 RUN rm -rf /var/lib/apt/lists/* \
     && rm -rf /tmp/* \
     && rm -rf /var/tmp/* \
     && rm -rf /usr/share/doc/* \
     && rm -rf /usr/share/man/*
-
 EXPOSE 3306
-
 CMD ["mariadbd"]
