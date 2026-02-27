@@ -12,7 +12,7 @@
   "containerDefinitions": [
     {
       "name": "nginx",
-      "image": "533876055951.dkr.ecr.ap-northeast-3.amazonaws.com/ashimizu-testwp-nginx:latest",
+      "image": "533876055951.dkr.ecr.ap-northeast-1.amazonaws.com/ashimizu-testwp-nginx:latest",
       "essential": true,
       "portMappings": [
         {
@@ -37,8 +37,9 @@
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/ashimizu-testwp",
-          "awslogs-region": "ap-northeast-3",
-          "awslogs-stream-prefix": "nginx"
+          "awslogs-region": "ap-northeast-1",
+          "awslogs-stream-prefix": "nginx",
+          "awslogs-create-group": "true"
         }
       },
       "healthCheck": {
@@ -51,7 +52,7 @@
     },
     {
       "name": "php-fpm",
-      "image": "533876055951.dkr.ecr.ap-northeast-3.amazonaws.com/ashimizu-testwp-phpfpm:latest",
+      "image": "533876055951.dkr.ecr.ap-northeast-1.amazonaws.com/ashimizu-testwp-phpfpm:latest",
       "essential": true,
       "portMappings": [],
       "dependsOn": [
@@ -77,7 +78,7 @@
       "secrets": [
         {
           "name": "WORDPRESS_DB_PASSWORD",
-          "valueFrom": "arn:aws:secretsmanager:ap-northeast-3:533876055951:secret:wordpress/ashimizu-db-password-lJqSFt"
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:533876055951:secret:wordpress/ashimizu-db-password-MgeYjc"
         }
       ],
       "mountPoints": [
@@ -91,8 +92,9 @@
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/ashimizu-testwp",
-          "awslogs-region": "ap-northeast-3",
-          "awslogs-stream-prefix": "php-fpm"
+          "awslogs-region": "ap-northeast-1",
+          "awslogs-stream-prefix": "php-fpm",
+          "awslogs-create-group": "true"
         }
       },
       "healthCheck": {
@@ -105,7 +107,7 @@
     },
     {
       "name": "mysql",
-      "image": "533876055951.dkr.ecr.ap-northeast-3.amazonaws.com/ashimizu-testwp-mysql:latest",
+      "image": "533876055951.dkr.ecr.ap-northeast-1.amazonaws.com/ashimizu-testwp-mysql:latest",
       "essential": true,
       "portMappings": [],
       "environment": [
@@ -121,11 +123,11 @@
       "secrets": [
         {
           "name": "MYSQL_ROOT_PASSWORD",
-          "valueFrom": "arn:aws:secretsmanager:ap-northeast-3:533876055951:secret:wordpress/ashimizu-db-root-password-40r4qi"
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:533876055951:secret:wordpress/ashimizu-db-root-password-cqYppw"
         },
         {
           "name": "MYSQL_PASSWORD",
-          "valueFrom": "arn:aws:secretsmanager:ap-northeast-3:533876055951:secret:wordpress/ashimizu-db-password-lJqSFt"
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:533876055951:secret:wordpress/ashimizu-db-password-MgeYjc"
         }
       ],
       "mountPoints": [
@@ -139,8 +141,9 @@
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/ashimizu-testwp",
-          "awslogs-region": "ap-northeast-3",
-          "awslogs-stream-prefix": "mysql"
+          "awslogs-region": "ap-northeast-1",
+          "awslogs-stream-prefix": "mysql",
+          "awslogs-create-group": "true"
         }
       },
       "healthCheck": {
