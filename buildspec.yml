@@ -12,7 +12,7 @@ phases:
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_BASE
       - echo "=== イメージタグ生成 (commit hash 7桁) ==="
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - IMAGE_TAG="${COMMIT_HASH:-latest}"
+      - if [ -z "$COMMIT_HASH" ]; then IMAGE_TAG=latest; else IMAGE_TAG=$COMMIT_HASH; fi
       - echo "Image tag: $IMAGE_TAG"
 
   build:
