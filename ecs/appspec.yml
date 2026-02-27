@@ -1,43 +1,21 @@
 version: 0.0
-
-# =============================================================================
-# CodeDeploy appspec.yml
-# 役割: Blue/Green デプロイ時の ECS サービス設定とライフサイクルフックを定義する
-#
-# 【変更が必要な箇所】
-#   - Subnets    : ECS タスクを起動するサブネット ID
-#   - SecurityGroups: ECS タスク用セキュリティグループ ID
-#   - Lambda ARN : ライフサイクルフック用 Lambda の ARN
-# =============================================================================
-
 Resources:
   - TargetService:
       Type: AWS::ECS::Service
       Properties:
-        # <TASK_DEFINITION> は CodeDeploy が taskdef.json の内容で自動置換する
         TaskDefinition: <TASK_DEFINITION>
         LoadBalancerInfo:
-          # ALB が直接トラフィックを流すコンテナを指定する
-          # nginx が :80 でリクエストを受け付けるため nginx を指定
           ContainerName: "nginx"
           ContainerPort: 80
         PlatformVersion: "LATEST"
         NetworkConfiguration:
           AwsvpcConfiguration:
             Subnets:
-              - subnet-065f23a74799eb363   # ← 使用するサブネットIDに変更
-              - subnet-086fedbdfdfbbe55e   # ← 使用するサブネットIDに変更
-              - subnet-0ae8aa361574599e0
+              - subnet-00c8d1110876159bb
+              - subnet-075d6a254031a4b46
             SecurityGroups:
-              - sg-07a8785db98eaae01       # ← ECSタスク用セキュリティグループIDに変更
-            # パブリックサブネットの場合は ENABLED、プライベートは DISABLED
+              - sg-0073524d1f249df00
             AssignPublicIp: ENABLED
-
-# =============================================================================
-# ライフサイクルフック（Lambda が Succeeded を返すとデプロイ続行）
-# BeforeAllowTraffic: :443 切り替え前に Green タスクの動作確認を実施
-# AfterAllowTraffic:  :443 切り替え後にスモークテストと Slack 通知を実施
-# =============================================================================
 Hooks:
-  - BeforeAllowTraffic: "arn:aws:lambda:ap-northeast-3:533876055951:function:ashimizu-wordpress-before-allow-traffic"
-  - AfterAllowTraffic: "arn:aws:lambda:ap-northeast-3:533876055951:function:ashimizu-wordpress-after-allow-traffic"
+  - BeforeAllowTraffic: "arn:aws:lambda:ap-northeast-1:533876055951:function:ashimizu-wordpress-before-allow-traffic"
+  - AfterAllowTraffic: "arn:aws:lambda:ap-northeast-1:533876055951:function:ashimizu-wordpress-after-allow-traffic"
